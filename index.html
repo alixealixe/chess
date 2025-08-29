@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pixel Chessboard</title>
 
-  <!-- Chessboard.js 1.0.0 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+  <!-- Chessboard.js 1.0.0 from unpkg -->
+  <link rel="stylesheet" href="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"/>
+  <script src="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 
-  <!-- Chess.js (for game rules) -->
+  <!-- Chess.js (rules engine) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
 
   <style>
@@ -30,7 +30,7 @@
       image-rendering: pixelated; /* force pixel look */
     }
 
-    /* Pixel-style board colors */
+    /* Pixel palette for squares */
     .white-1e1d7 { background: #f2e8c9 !important; }
     .black-3c85d { background: #a67649 !important; }
   </style>
@@ -39,28 +39,22 @@
   <div id="board"></div>
 
   <script>
-    // Setup chess logic
     var game = new Chess();
 
-    function onDragStart (source, piece) {
-      // only allow moves for the correct side
+    function onDragStart(source, piece) {
+      // disallow moving opponent's pieces
       if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
           (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
         return false;
       }
     }
 
-    function onDrop (source, target) {
-      var move = game.move({
-        from: source,
-        to: target,
-        promotion: 'q' // auto promote to queen
-      });
-
-      if (move === null) return 'snapback'; // illegal move
+    function onDrop(source, target) {
+      var move = game.move({ from: source, to: target, promotion: 'q' });
+      if (move === null) return 'snapback';
     }
 
-    function onSnapEnd () {
+    function onSnapEnd() {
       board.position(game.fen());
     }
 
