@@ -2,9 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pixel Chessboard</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+
+  <!-- Chessboard.js 1.0.0 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+
+  <!-- Chess.js (for game rules) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
 
   <style>
     body {
@@ -20,34 +26,50 @@
       width: 90vmin;
       max-width: 600px;
       border: 6px solid #333;
-      image-rendering: pixelated; /* 🔥 force pixel look */
-    }
-
-    /* Pixel palette for squares */
-    .white-1e1d7 {
-      background: #f2e8c9 !important;
-    }
-    .black-3c85d {
-      background: #a67649 !important;
-    }
-
-    /* Optional: retro border vibe */
-    #board {
       box-shadow: 0 0 0 4px #111, 0 0 0 8px #555;
+      image-rendering: pixelated; /* force pixel look */
     }
+
+    /* Pixel-style board colors */
+    .white-1e1d7 { background: #f2e8c9 !important; }
+    .black-3c85d { background: #a67649 !important; }
   </style>
 </head>
 <body>
   <div id="board"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
-
   <script>
-    const board = Chessboard('board', {
+    // Setup chess logic
+    var game = new Chess();
+
+    function onDragStart (source, piece) {
+      // only allow moves for the correct side
+      if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+          (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+        return false;
+      }
+    }
+
+    function onDrop (source, target) {
+      var move = game.move({
+        from: source,
+        to: target,
+        promotion: 'q' // auto promote to queen
+      });
+
+      if (move === null) return 'snapback'; // illegal move
+    }
+
+    function onSnapEnd () {
+      board.position(game.fen());
+    }
+
+    var board = Chessboard('board', {
       draggable: true,
-      dropOffBoard: 'snapback',
-      position: 'start'
+      position: 'start',
+      onDragStart: onDragStart,
+      onDrop: onDrop,
+      onSnapEnd: onSnapEnd
     });
   </script>
 </body>
