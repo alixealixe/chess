@@ -1,6 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Chess Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .chess-container {
+            text-align: center;
+        }
+
+        .chess-board {
+            display: inline-grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            border: 2px solid #000000;
+        }
+
+        .square {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .square.light {
+            background: #ffffff;
+        }
+
+        .square.dark {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .square.selected {
+            background: #cccccc !important;
+            color: #000000;
+        }
+
+        .square.possible-move {
+            background: #888888 !important;
+            color: #ffffff;
+        }
+
+        .info {
+            margin-top: 20px;
+            color: #000000;
+            font-size: 14px;
+        }
+
+        .reset-btn {
+            margin-top: 10px;
+            background: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .reset-btn:hover {
+            background: #333333;
+        }
+
+        @media (max-width: 600px) {
+            .chess-board {
+                grid-template-columns: repeat(8, 40px);
+                grid-template-rows: repeat(8, 40px);
+            }
+            
+            .square {
+                width: 40px;
+                height: 40px;
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chess-container">
+        <div class="chess-board" id="chess-board"></div>
+        
+        <div class="info">
+            <div id="turn-indicator">White's turn</div>
+            <button class="reset-btn" onclick="resetBoard()">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Chess pieces using Unicode symbols
+        const pieces = {
+            'white': {
+                'king': '♔', 'queen': '♕', 'rook': '♖', 
+                'bishop': '♗', 'knight': '♘', 'pawn': '♙'
+            },
+            'black': {
+                'king': '♚', 'queen': '♛', 'rook': '♜', 
+                'bishop': '♝', 'knight': '♞', 'pawn': '♟'
+            }
+        };
+
+        // Initial board setup
+        const initialBoard = [
+            ['♜','♞','♝','♛','♚','♝','♞','♜'],
+            ['♟','♟','♟','♟','♟','♟','♟','♟'],
+            ['','','','','','','',''],
+            ['','','','','','','',''],
+            ['','','','','','','',''],
+            ['','','','','','','',''],
+            ['♙','♙','♙','♙','♙','♙','♙','♙'],
+            ['♖','♘','♗','♕','♔','♗','♘','♖']
+        ];
+
+        let currentBoard = JSON.parse(JSON.stringify(initialBoard));
+        let selectedSquare = null;
+        let currentPlayer = 'white';
+
+        function initBoard() {
+            const board = document.getElementById('chess-board');
+            board.innerHTML = '';
+            
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+                    square.textContent = currentBoard[row][col];
+                    square.addEventListener('click', () => handleSquareClick(row, col));
+                    board.appendChild(square);
+                }
+            }
+        }
+
+        function handleSquareClick(row, col) {
+            const clickedPiece = currentBoard[row][col];
+            const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            
+            clearHighlights();
+            
+            if (isPieceOfCurrentPlayer(clickedPiece)) {
+                selectedSquare = { row, col };
+                square.classList.add('selected');
+                highlightPossibleMoves(row, col);
+            }
+            else if (selectedSquare && isValidMove(selectedSquare.row, selectedSquare.col, row, col)) {
+                makeMove(selectedSquare.row, selectedSquare.col, row, col);
+                selectedSquare = null;
+                switchPlayer();
+            }
+            else {
+                selectedSquare = null;
+            }
+        }
+
+        function isPieceOfCurrentPlayer(piece) {
+            if (!piece) return false;
+            const whitePieces = Object.values(pieces.white);
+            const blackPieces = Object.values(pieces.black);
+            
+            return currentPlayer === 'white' ? whitePieces.includes(piece) : blackPieces.includes(piece);
+        }
+
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7) return false;
+            
+            const piece = currentBoard[fromRow][fromCol];
+            const targetPiece = currentBoard[toRow][toCol];
+            
+            if (targetPiece && isPieceOfCurrentPlayer(targetPiece)) return false;
+            
+            const rowDiff = Math.abs(toRow - fromRow);
+            const colDiff = Math.abs(toCol - fromCol);
+            
+            // Pawn movement
+            if (piece === '♙' || piece === '♟') {
+                const direction = piece === '♙' ? -1 : 1;
+                const startRow = piece === '♙' ? 6 : 1;
+                
+                if (colDiff === 0 && !targetPiece) {
+                    if (toRow === fromRow + direction) return true;
+                    if (fromRow === startRow && toRow === fromRow + 2 * direction) return true;
+                }
+                if (colDiff === 1 && rowDiff === 1 && targetPiece && toRow === fromRow + direction) return true;
+            }
+            
+            // Rook movement
+            if (piece === '♖' || piece === '♜') {
+                if (rowDiff === 0 || colDiff === 0) {
+                    return isPathClear(fromRow, fromCol, toRow, toCol);
+                }
+            }
+            
+            // Bishop movement
+            if (piece === '♗' || piece === '♝') {
+                if (rowDiff === colDiff) {
+                    return isPathClear(fromRow, fromCol, toRow, toCol);
+                }
+            }
+            
+            // Queen movement
+            if (piece === '♕' || piece === '♛') {
+                if (rowDiff === 0 || colDiff === 0 || rowDiff === colDiff) {
+                    return isPathClear(fromRow, fromCol, toRow, toCol);
+                }
+            }
+            
+            // King movement
+            if (piece === '♔' || piece === '♚') {
+                return rowDiff <= 1 && colDiff <= 1;
+            }
+            
+            // Knight movement
+            if (piece === '♘' || piece === '♞') {
+                return (rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2);
+            }
+            
+            return false;
+        }
+
+        function isPathClear(fromRow, fromCol, toRow, toCol) {
+            const rowStep = toRow > fromRow ? 1 : toRow < fromRow ? -1 : 0;
+            const colStep = toCol > fromCol ? 1 : toCol < fromCol ? -1 : 0;
+            
+            let currentRow = fromRow + rowStep;
+            let currentCol = fromCol + colStep;
+            
+            while (currentRow !== toRow || currentCol !== toCol) {
+                if (currentBoard[currentRow][currentCol] !== '') return false;
+                currentRow += rowStep;
+                currentCol += colStep;
+            }
+            
+            return true;
+        }
+
+        function highlightPossibleMoves(row, col) {
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (isValidMove(row, col, r, c)) {
+                        const square = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                        square.classList.add('possible-move');
+                    }
+                }
+            }
+        }
+
+        function makeMove(fromRow, fromCol, toRow, toCol) {
+            currentBoard[toRow][toCol] = currentBoard[fromRow][fromCol];
+            currentBoard[fromRow][fromCol] = '';
+            initBoard();
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.square').forEach(square => {
+                square.classList.remove('selected', 'possible-move');
+            });
+        }
+
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+            document.getElementById('turn-indicator').textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s turn`;
+        }
+
+        function resetBoard() {
+            currentBoard = JSON.parse(JSON.stringify(initialBoard));
+            currentPlayer = 'white';
+            selectedSquare = null;
+            document.getElementById('turn-indicator').textContent = "White's turn";
+            initBoard();
+        }
+
+        initBoard();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pixel Chessboard</title>
