@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Chessboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+
+  <style>
+    body {
+      background: #1b1b1b;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #board {
+      width: 90vmin;
+      max-width: 600px;
+      border: 6px solid #333;
+      image-rendering: pixelated; /* 🔥 force pixel look */
+    }
+
+    /* Pixel palette for squares */
+    .white-1e1d7 {
+      background: #f2e8c9 !important;
+    }
+    .black-3c85d {
+      background: #a67649 !important;
+    }
+
+    /* Optional: retro border vibe */
+    #board {
+      box-shadow: 0 0 0 4px #111, 0 0 0 8px #555;
+    }
+  </style>
+</head>
+<body>
+  <div id="board"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+
+  <script>
+    const board = Chessboard('board', {
+      draggable: true,
+      dropOffBoard: 'snapback',
+      position: 'start'
+    });
+  </script>
+</body>
+</html>
